@@ -1,5 +1,7 @@
- var word = "fat";
+ var sentence = "cat on rug";
+ var words = sentence.split(" ");
 var results = []
+
 
 
  var InstantSearch = {
@@ -149,18 +151,34 @@ var results = []
      InstantSearch.highlight(container, highlightText);
  }
 
- function processor(answer, i, func2){
-   if(word[i] == answer && i == 2){
+ function iterate(word, ind){
+   responsiveVoice.speak("Spell");
+   var j = 0;
+   function iter(w, ind){
+     if(j < w.length){
+       responsiveVoice.speak(w.charAt(j));
+       highlight(w.charAt(j));
+       j++;
+       setTimeout(function () {iter(w, ind);}, 1000);
+     }
+     check(ind, processor);
+
+   }
+   setTimeout(function () {iter(word, ind);}, 1000);
+ }
+
+ function processor(answer, i, func2){ //func2 is iterate
+   if(words[i] == answer && i == 2){
      console.log('Done');
    }
-   else if(word[i] == answer){
+   else if(words[i] == answer){
      console.log('Continue')
-     highlight(word[i+1]);
-     func2(i+1, processor)
+     highlight(words[i]);
+     func2(words[i+1], i+1)
    }
    else{
      console.log('Not yet')
-     func2(i, processor)
+     func2(words[i], i)
    }
  }
 
@@ -184,7 +202,7 @@ var results = []
         console.log('recognizing');
         var resolution = results[0];
         results = [];
-        func(resolution, i, check);
+        func(resolution, i, iterate);
       }
 
   };
@@ -206,9 +224,9 @@ var results = []
  function begin(){
    action();
    responsiveVoice.speak("Welcome to Bitreed. When you see a letter being highlighted, please say that letter");
-   document.getElementById("new").innerHTML = word;
-   highlight(word[0]);
+   document.getElementById("new").innerHTML = sentence;
 
-   setTimeout(function() { check(0, processor);}, 7000);
+
+   setTimeout(function() { iterate(words[0], 0);}, 7000);
 
  }
