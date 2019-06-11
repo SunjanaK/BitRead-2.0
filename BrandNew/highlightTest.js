@@ -1,34 +1,5 @@
  var word = "fat";
-
-
- function check(item, i){
-   while(i < 3){
-     var recognizer = new webkitSpeechRecognition();
-     // var SpeechRecognition = (
-     //   window.SpeechRecognition ||
-     //   window.webkitSpeechRecognition
-     // );
-     // var recognizer = new SpeechRecognition();
-
-  // Start producing results before the person has finished speaking
-    recognizer.interimResults = true;
-
-  // Set the language of the recognizer
-    recognizer.lang = 'en-US';
-    recognizer.onresult = function(event) { //this is the function that is lagging 
-        console.log('You said: ', event.results[0][0].transcript);
-        i += 1;
-        delay(i);
-
-    };
-    recognizer.start();
-    console.log('Ready to hear the answer');
-
-   }
-}
-
-
-
+var results = []
 
 
  var InstantSearch = {
@@ -178,62 +149,66 @@
      InstantSearch.highlight(container, highlightText);
  }
 
-
-
-
- // function highlight(text) {
- //   var inputText = document.getElementById("new");
- //   var innerHTML = inputText.innerHTML;
- //   var index = innerHTML.indexOf(text);
- //   if (index >= 0) {
- //    innerHTML = innerHTML.substring(0,index) + "<span class='highlight'>" + innerHTML.substring(index,index+text.length) + "</span>" + innerHTML.substring(index + text.length);
- //    inputText.innerHTML = innerHTML;
- //   }
- // }
-
- function sleep(milliseconds) {
-   var start = new Date().getTime();
-   for (var i = 0; i < 1e7; i++) {
-     if ((new Date().getTime() - start) > milliseconds){
-       break;
-     }
+ function processor(answer, i, func2){
+   if(word[i] == answer && i == 2){
+     console.log('Done');
+   }
+   else if(word[i] == answer){
+     console.log('Continue')
+     highlight(word[i+1]);
+     func2(i+1, processor)
+   }
+   else{
+     console.log('Not yet')
+     func2(i, processor)
    }
  }
 
+ function check(i, func){
+   var recognizer = new webkitSpeechRecognition();
+
+// Start producing results before the person has finished speaking
+  recognizer.interimResults = true;
+  recognizer.continuous = true;
+
+// Set the language of the recognizer
+  recognizer.lang = 'en-US';
+  recognizer.onresult = function(event) { //this is the function that is lagging
+      console.log('It works');
+      var res = event.results[0][0].transcript;
+      results.push(res)
+      console.log(results);
+      if(results.length == 1){
+        recognizer.interimResults = false;
+        recognizer.stop();
+        console.log('recognizing');
+        var resolution = results[0];
+        results = [];
+        func(resolution, i, check);
+      }
+
+  };
+  recognizer.start();
+  console.log('Ready to hear the answer');
+
+
+ }
+ var hidden = false;
+ function action() {
+     hidden = !hidden;
+     if(hidden) {
+         document.getElementById('togglee').style.visibility = 'hidden';
+     } else {
+         document.getElementById('togglee').style.visibility = 'visible';
+     }
+ }
 
  function begin(){
+   action();
    responsiveVoice.speak("Welcome to Bitreed. When you see a letter being highlighted, please say that letter");
    document.getElementById("new").innerHTML = word;
+   highlight(word[0]);
 
-   function delay(i){
-     check(word[i], i)
+   setTimeout(function() { check(0, processor);}, 7000);
 
-     }
-
-
-     // for(i = 0; i < word.length; i++){
-     //
-     //   highlight(word[i]);
-     //   check(word[i]) //recording turns on and shuts down in an instant
-     //
-     //   // var res = check(word[i]);
-     //   // if(res == true){
-     //   //   console.log("It works!")
-     //   // }
-     //   // else{
-     //   //   console.log("It doesn't work")
-     //   // }
-     //
-     //     // res = check(word[i]);
-     //   }
-
-     // highlight(word);
-     // var end = check(word[i]);
-     // if(end == true){
-     //   responsiveVoice.speak("Well done");
-     // }
-     // else{
-     //   responsiveVoice.speak("Better luck next time");
-     // }
-setTimeout(delay(0), 7000);
-   }
+ }
