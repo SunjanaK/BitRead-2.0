@@ -1,8 +1,6 @@
  var sentence = "cat on rug";
  var words = sentence.split(" ");
-var results = []
-
-
+ var phrase = " ";
 
  var InstantSearch = {
 
@@ -140,7 +138,139 @@ var results = []
 
 
 
+ var InstantUnHighLight = {
 
+     "highlight": function (container, highlightText)
+     {
+         var internalHighlighter = function (options)
+         {
+
+             var id = {
+                 container: "container",
+                 tokens: "tokens",
+                 all: "all",
+                 token: "token",
+                 className: "className",
+                 sensitiveSearch: "sensitiveSearch"
+             },
+             tokens = options[id.tokens],
+             allClassName = options[id.all][id.className],
+             allSensitiveSearch = options[id.all][id.sensitiveSearch];
+
+
+             function checkAndReplace(node, tokenArr, classNameAll, sensitiveSearchAll)
+             {
+                 var nodeVal = node.nodeValue, parentNode = node.parentNode,
+                     i, j, curToken, myToken, myClassName, mySensitiveSearch,
+                     finalClassName, finalSensitiveSearch,
+                     foundIndex, begin, matched, end,
+                     textNode, span, isFirst;
+
+                 for (i = 0, j = tokenArr.length; i < j; i++)
+                 {
+                     curToken = tokenArr[i];
+                     myToken = curToken[id.token];
+                     myClassName = curToken[id.className];
+                     mySensitiveSearch = curToken[id.sensitiveSearch];
+
+                     finalClassName = (classNameAll ? myClassName + " " + classNameAll : myClassName);
+
+                     finalSensitiveSearch = (typeof sensitiveSearchAll !== "undefined" ? sensitiveSearchAll : mySensitiveSearch);
+
+                     isFirst = true;
+                     while (true)
+                     {
+                         if (finalSensitiveSearch)
+                             foundIndex = nodeVal.indexOf(myToken);
+                         else
+                             foundIndex = nodeVal.toLowerCase().indexOf(myToken.toLowerCase());
+
+                         if (foundIndex < 0)
+                         {
+                             if (isFirst)
+                                 break;
+
+                             if (nodeVal)
+                             {
+                                 textNode = document.createTextNode(nodeVal);
+                                 parentNode.insertBefore(textNode, node);
+                             } // End if (nodeVal)
+
+                             parentNode.removeChild(node);
+                             break;
+                         } // End if (foundIndex < 0)
+
+                         isFirst = false;
+
+
+                         begin = nodeVal.substring(0, foundIndex);
+                         matched = nodeVal.substr(foundIndex, myToken.length);
+
+                         if (begin)
+                         {
+                             textNode = document.createTextNode(begin);
+                             parentNode.insertBefore(textNode, node);
+                         } // End if (begin)
+
+                         span = document.createElement("span");
+                         span.className += finalClassName;
+                         span.appendChild(document.createTextNode(matched));
+                         parentNode.insertBefore(span, node);
+
+                         nodeVal = nodeVal.substring(foundIndex + myToken.length);
+                     } // Whend
+
+                 } // Next i
+             }; // End Function checkAndReplace
+
+             function iterator(p)
+             {
+                 if (p === null) return;
+
+                 var children = Array.prototype.slice.call(p.childNodes), i, cur;
+
+                 if (children.length)
+                 {
+                     for (i = 0; i < children.length; i++)
+                     {
+                         cur = children[i];
+                         if (cur.nodeType === 3)
+                         {
+                             checkAndReplace(cur, tokens, allClassName, allSensitiveSearch);
+                         }
+                         else if (cur.nodeType === 1)
+                         {
+                             iterator(cur);
+                         }
+                     }
+                 }
+             }; // End Function iterator
+
+             iterator(options[id.container]);
+         } // End Function highlighter
+         ;
+
+
+         internalHighlighter(
+             {
+                 container: container
+                 , all:
+                     {
+                         className: "highlighter"
+                     }
+                 , tokens: [
+                     {
+                         token: highlightText
+                         , className: "moonlight"
+                         , sensitiveSearch: false
+                     }
+                 ]
+             }
+         ); // End Call internalHighlighter
+
+     } // End Function highlight
+
+ };
 
 
 
@@ -151,38 +281,58 @@ var results = []
      InstantSearch.highlight(container, highlightText);
  }
 
- function iterate(word, ind){
+ function unhighlight(highlightText)
+ {
+     var container = document.getElementById("new");
+     InstantUnHighLight.highlight(container, highlightText);
+ }
+
+ function iterate(word, ind, results){
    responsiveVoice.speak("Spell");
    var j = 0;
    function iter(w, ind){
+
      if(j < w.length){
        responsiveVoice.speak(w.charAt(j));
        highlight(w.charAt(j));
+       if(j > 0){
+         unhighlight(w.charAt(j-1));
+       }
        j++;
+
        setTimeout(function () {iter(w, ind);}, 1000);
      }
-     check(ind, processor);
+     else{
+       highlight(w);
+
+
+       // unhighlight(w.charAt(j-1));
+
+       check(ind, processor, results);
+     }
 
    }
    setTimeout(function () {iter(word, ind);}, 1000);
  }
 
- function processor(answer, i, func2){ //func2 is iterate
+ function processor(answer, i, func2, results){ //func2 is iterate
    if(words[i] == answer && i == 2){
-     console.log('Done');
+     responsiveVoice.speak("hooray");
    }
    else if(words[i] == answer){
-     console.log('Continue')
-     highlight(words[i]);
-     func2(words[i+1], i+1)
+     phrase += words[i];
+     phrase += " ";
+
+     func2(words[i+1], i+1, results);
    }
    else{
-     console.log('Not yet')
-     func2(words[i], i)
+     responsiveVoice.speak("try again");
+     setTimeout(function(){func2(words[i], i, results)}, 1000);
    }
  }
 
- function check(i, func){
+
+ function check(i, func, results){
    var recognizer = new webkitSpeechRecognition();
 
 // Start producing results before the person has finished speaking
@@ -192,18 +342,19 @@ var results = []
 // Set the language of the recognizer
   recognizer.lang = 'en-US';
   recognizer.onresult = function(event) { //this is the function that is lagging
-      console.log('It works');
       var res = event.results[0][0].transcript;
       results.push(res)
-      console.log(results);
-      if(results.length == 1){
+
+      if(results.length == 2){
+        console.log(results);
         recognizer.interimResults = false;
         recognizer.stop();
         console.log('recognizing');
-        var resolution = results[0];
-        results = [];
-        func(resolution, i, iterate);
+        var resolution = results[1];
+
+        func(resolution, i, iterate, []); //processor
       }
+
 
   };
   recognizer.start();
@@ -227,6 +378,6 @@ var results = []
    document.getElementById("new").innerHTML = sentence;
 
 
-   setTimeout(function() { iterate(words[0], 0);}, 7000);
+   setTimeout(function() { iterate(words[0], 0, []);}, 7000);
 
  }
