@@ -19,6 +19,14 @@ function highlightword(startind, endind){
   });
 }
 
+function show_image(src, width, height, alt){
+  var img = document.createElement("img");
+  img.src = src;
+  img.width = width;
+  img.height = height;
+  img.alt = alt;
+  document.body.appendChild(img);
+}
 
 
     //you can replace this 3 lines of code to single line like
@@ -138,7 +146,7 @@ function highlightword(startind, endind){
    if(answers.indexOf(words[i]) != -1 && i == words.length-1){
      responsiveVoice.speak("hooray");
    }
-   if(answers.indexOf(words[i]) != -1 && i == phrase.length-1){
+   else if(answers.indexOf(words[i]) != -1 && i == phrase.length-1){
      console.log(words[i+1])
      func2(words[i+1], i+1, results);
    }
