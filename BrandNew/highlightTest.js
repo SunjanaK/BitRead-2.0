@@ -1,4 +1,4 @@
- var sentence = "cat in hat";
+ var sentence = "cat in car";
  var words = sentence.split(" ");
  var phrase = [];
  var letter = 0;
@@ -36,9 +36,10 @@ function highlightword(startind, endind){
   }
 
  function iterate(word, ind, results){
-   console.log(ind)
+   // console.log(ind)
    responsiveVoice.speak("Spell");
    var j = 0;
+   console.log("Word is" + word);
    function iter(w, ind){
 
      if(j < w.length){
@@ -69,14 +70,14 @@ function highlightword(startind, endind){
  function processor(answer, i, func2, results){ //func2 is iterate
    console.log(phrase)
    phrase.push(words[i]);
-   if(words[i] == answer && i == 2){
+   if(answer.indexOf(words[i]) != -1 && i == 2){
      phrasecheck();
 
    }
-   else if(words[i] == answer && phrase.length > 1){
+   else if(answer.indexOf(words[i]) != -1 && phrase.length > 1){
      phrasecheck();
    }
-   else if(words[i] == answer){
+   else if(answer.indexOf(words[i]) != -1){
      letter += 1;
 
 
@@ -103,16 +104,18 @@ function highlightword(startind, endind){
   recognizer.lang = 'en-US';
   recognizer.onresult = function(event) { //this is the function that is lagging
       var res = event.results[0][0].transcript;
-      results.push(res)
+      results.push(res);
 
-      if(results.length == 10){
+
+      if(results.length == 2){
         console.log(results);
         recognizer.interimResults = false;
+
         recognizer.stop();
         console.log('recognizing');
 
 
-        func(results[2], i, iterate, []); //processor
+        func(results, i, iterate, []); //processor
       }
 
 
@@ -130,8 +133,9 @@ function highlightword(startind, endind){
  }
 
  function processPhrase(answers, i, func2, results){ //func2 is iterate
-   console.log("Length of phrase is" + phrase.length)
-   if(answers.indexOf(words[i]) != -1 && i == phrase.length){
+   console.log("Index is" + i);
+   console.log("Phrase length is" + phrase.length);
+   if(answers.indexOf(words[i]) != -1 && i == words.length-1){
      responsiveVoice.speak("hooray");
    }
    if(answers.indexOf(words[i]) != -1 && i == phrase.length-1){
